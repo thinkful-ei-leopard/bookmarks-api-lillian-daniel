@@ -51,3 +51,5 @@
 {"message":"Bookmark with the id 20f21465-b0ed-4596-9e1a-af032d682eee deleted.","level":"info"}
 {"message":"Invalid url 'google.com' supplied","level":"error"}
 {"message":"Bookmark with the id 3fdb7b6a-ea21-4b5e-9243-867865c2ac2e deleted.","level":"info"}
+{"message":"Unauthorized request to path /bookmarks","level":"error"}
+{"message":"Unauthorized request to path /bookmarks","level":"error"}

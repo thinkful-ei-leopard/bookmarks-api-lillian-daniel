@@ -4,6 +4,7 @@ const uuid = require('uuid/v4');
 const { isWebUri } = require('valid-url');
 const logger = require('./logger');
 const { bookmarks } = require('./store');
+const BookmarksService = require('./bookmarks-service.js');
 
 const bookmarksRouter = express.Router();
 const bodyParser = express.json();
@@ -11,9 +12,13 @@ const bodyParser = express.json();
 
 bookmarksRouter
   .route('/')
-  .get((req, res) => {
-    res
-      .json(bookmarks);
+  .get((req, res, next) => {
+    const knexInstance = req.app.get('db');
+    BookmarksService.getAllBookmarks(knexInstance)
+      .then(bookmarks => {
+        res.json(bookmarks);
+      })
+      .catch(next);
   })
   .post(bodyParser, (req, res) => {
     const { title, url, description, rating } = req.body;
@@ -54,6 +59,7 @@ bookmarksRouter
 bookmarksRouter
   .route('/:id')
   .get((req, res) => {
+    const knexInstance = req.app.get('db');
     const { id } = req.params;
     const bookmark = bookmarks.find( b => b.id === id);
     
