@@ -48,4 +48,33 @@ describe.only('Bookmarks Endpoints', function() {
       });
     });
   });
+  describe('Get /bookmarks/:id', () => {
+    context('with no matching id', () => {
+      it('responds with 404 not found', () => {
+        const bookmarkId = 666;
+        return supertest(app)
+          .get(`/bookmarks/${bookmarkId}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(404);
+      });
+    });
+    context('with matching id', () => {
+      const bookmarkArray = makeBookmarksArray();
+      
+      beforeEach('insert bookmarks', () => {
+        return db 
+          .into('bookmarks_table')
+          .insert(bookmarkArray);
+      });
+      
+      it('responds with 200 and bookmark of given id', () => {
+        const bookmarkId = 3;
+        const bookmark = bookmarkArray[bookmarkId - 1];
+        return supertest(app)
+          .get(`/bookmarks/${bookmarkId}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(200, bookmark);
+      });
+    });
+  });
 });
