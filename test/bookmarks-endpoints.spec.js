@@ -48,6 +48,7 @@ describe.only('Bookmarks Endpoints', function() {
       });
     });
   });
+
   describe('Get /bookmarks/:id', () => {
     context('with no matching id', () => {
       it('responds with 404 not found', () => {
@@ -77,4 +78,75 @@ describe.only('Bookmarks Endpoints', function() {
       });
     });
   });
+
+  describe('POST /bookmarks', () => {
+    it('creates a bookmark, respondding eith a 201 and a new bookmark', function() {
+      const newBookmark = {
+        title: 'tester',
+        url: 'https://www.test.com',
+        description: 'test',
+        rating: 1
+    };
+      return supertest(app)
+        .post('/bookmarks')
+        .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+        .send(newBookmark)
+        .expect(201)
+        .expect(res => {
+          expect(res.body.title).to.eql(newBookmark.title)
+          expect(res.body.url).to.eql(newBookmark.url)
+          expect(res.body.description).to.eql(newBookmark.description)
+          expect(res.body.rating).to.eql(newBookmark.rating)
+          expect(res.body).to.have.property('id')
+          expect(res.headers.location).to.eql(`/bookmarks/${res.body.id}`)
+        })
+        .then(res =>
+          supertest(app)
+            .get(`/bookmarks/${res.body.id}`)
+            .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+            .expect(res.body)
+          )
+    });
+
+    it('responds with 400 when title is missing', function() {
+      const newBookmark = {
+        title: null,
+        url: 'https://www.test.com',
+        description: 'test',
+        rating: 1
+    };
+      return supertest(app)
+        .post('/bookmarks')
+        .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+        .send(newBookmark)
+        .expect(400)
+    })
+  });
+
+  describe.only(`DELETE /bookmarks/:id`, () => {
+    context('Given there are bookmarks in the database', () => {
+      const testBookmarks = makeBookmarksArray();
+
+      beforeEach('insert bookmarks', () => {
+        return db 
+          .into('bookmarks_table')
+          .insert(testBookmarks)
+      })
+      
+      it('responds with a 204 and removes the bookmark', () => {
+        const idToRemove = 2;
+        const expectedBookmarks = testBookmarks.filter(bookmark => bookmark.id !== idToRemove)
+        return supertest(app)
+          .delete(`/bookmarks/${idToRemove}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(204)
+          .then(res => 
+            supertest(app)
+              .get('/bookmarks')
+              .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+              .expect(expectedBookmarks)
+            )
+      })
+    })
+  })
 });

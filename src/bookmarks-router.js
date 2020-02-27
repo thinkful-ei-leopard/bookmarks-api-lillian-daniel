@@ -20,12 +20,13 @@ bookmarksRouter
       })
       .catch(next);
   })
-  .post(bodyParser, (req, res) => {
+  .post(bodyParser, (req, res, next) => {
     const { title, url, description, rating } = req.body;
+    const newBookmark = {title, url, description, rating}; 
     // the advantage of this approach is the code is cleaner
     // the disadvantage is the error message is less specific
-    if(!title || !url || !description || !rating) {
-      logger.error('All fields are required');
+    if(!title || !url || !rating) {
+      logger.error('Title, url, and rating are required');
       return res
         .status(400)
         .send('Invalid data');
@@ -36,24 +37,16 @@ bookmarksRouter
       // eslint-disable-next-line quotes
       return res.status(400).send(`'url' must be a valid URL`);
     }
+    BookmarksService.insertBookmark(req.app.get('db'), newBookmark)
+      .then(bookmark => {
+        res 
+          .status(201)
+          .location(`/bookmarks/${bookmark.id}`)
+          .json(bookmark)
+      })
+      .catch(next)
 
-    const id = uuid();
-    const bookmark = {
-      id,
-      title,
-      url,
-      description,
-      rating
-    };
-
-    bookmarks.push(bookmark);
-
-    logger.info(`Bookmark with the id ${id} created.`);
-
-    res
-      .status(201)
-      .location(`http://localhost:8000/bookmarks/${id}`)
-      .json(bookmark);
+    // logger.info(`Bookmark with the id ${id} created.`);
   });
 
 bookmarksRouter
@@ -71,25 +64,30 @@ bookmarksRouter
       })
       .catch(next);
   })
-  .delete((req, res) => {
-    const { id } = req.params;
+  .delete((req, res, next) => {
+    // const { id } = req.params;
+     const knexInstance = req.app.get('db');
+    // const bookmarkIndex = bookmarks.findIndex( b => b.id === id);
 
-    const bookmarkIndex = bookmarks.findIndex( b => b.id === id);
-
-    if (bookmarkIndex === -1) {
-      logger.error(`Bookmark with the id ${id} is not found`);
-      return res
-        .status(404)
-        .send('Not found');
-    }
-  
-    bookmarks.splice(bookmarkIndex, 1);
-
-    logger.info(`Bookmark with the id ${id} deleted.`);
+    // if (bookmarkIndex === -1) {
+    //   logger.error(`Bookmark with the id ${id} is not found`);
+    //   return res
+    //     .status(404)
+    //     .send('Not found');
+    // }
     
-    res
-      .status(204)
-      .end();
+    BookmarksService.deleteBookmark(knexInstance, req.params.id)
+      .then(bookmark => {
+        if(!bookmark) {
+          return res.status(404).json({
+            error: { message: `bookmark doesn't exist`}
+          });
+        }
+        res
+          .status(204)
+          .end()
+      })
+      .catch(next)
   });
 
 module.exports = bookmarksRouter;
