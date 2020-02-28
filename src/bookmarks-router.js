@@ -5,6 +5,7 @@ const { isWebUri } = require('valid-url');
 const logger = require('./logger');
 const { bookmarks } = require('./store');
 const BookmarksService = require('./bookmarks-service.js');
+const xss = require('xss');
 
 const bookmarksRouter = express.Router();
 const bodyParser = express.json();
@@ -60,7 +61,13 @@ bookmarksRouter
             error: { message: `Bookmark doesn't exist` }
           });
         }
-        res.json(bookmark);
+        res.json({
+          id: bookmark.id,
+          title: xss(bookmark.title), // sanitize title
+          url: xss(bookmark.url),
+          description: xss(bookmark.description),
+          rating: bookmark.rating,
+          })
       })
       .catch(next);
   })

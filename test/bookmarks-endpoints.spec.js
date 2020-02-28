@@ -148,5 +148,28 @@ describe.only('Bookmarks Endpoints', function() {
             )
       })
     })
+    context('Given an XSS attack bookmark', () => {
+      const maliciousBookmark = {
+        id: 911,
+        title: 'Naughty naughty <script>alert("xss");</script>',
+        url: 'https://badBookmark.com',
+        description: 'naughty',
+        rating: 2,
+      }
+      before('insert malicious bookmark', () => {
+        return db
+          .into('bookmarks_table')
+          .insert([ maliciousBookmark ])
+      })
+      it('removes XSS attack content', () => {
+        return supertest(app)
+          .get(`/bookmarks/${maliciousBookmark.id}`)
+          .set('Authorization', `Bearer ${process.env.API_TOKEN}`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.title).to.eql('Naughty naughty &lt;script&gt;alert(\"xss\");&lt;/script&gt;')
+          })
+      })
+    })
   })
 });
